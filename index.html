@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dreamss Homestay – Quản lý phòng V2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>Dreamss Homestay – Quản lý phòng</h1>
+      <p class="subtitle">
+        Nhập booking → tính giá → kiểm tra trùng phòng → tạo phiếu xác nhận →
+        lưu Google Sheet + cập nhật khách hàng thân thiết.
+      </p>
+    </header>
+
+    <main class="layout">
+      <!-- 1. THÊM BOOKING -->
+      <section class="card">
+        <h2>1. Thêm booking</h2>
+        <p class="small-text">
+          Chọn phòng, combo và giờ. Hệ thống tự tính <b>giá combo + giờ thêm</b>,
+          đồng thời chặn trùng phòng (cộng <b>30 phút dọn</b> sau check-out).
+        </p>
+
+        <form id="bookingForm">
+          <div class="row">
+            <div class="col-2">
+              <label for="roomSelect">Phòng</label>
+              <select id="roomSelect"></select>
+            </div>
+            <div class="col-2">
+              <label for="comboSelect">Combo</label>
+              <select id="comboSelect"></select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label for="checkIn">Giờ check-in</label>
+              <input type="datetime-local" id="checkIn" />
+            </div>
+            <div class="col-2">
+              <label for="checkOut">Giờ check-out</label>
+              <input type="datetime-local" id="checkOut" />
+            </div>
+          </div>
+
+          <div class="price-preview" id="pricePreview">
+            Chọn phòng, combo và giờ để xem giá dự kiến.
+          </div>
+
+          <p class="small-text">
+            Lưu ý: mỗi booking sẽ có thêm <b>30 phút dọn phòng</b>. Phòng chỉ
+            được book lại sau khi dọn xong.
+          </p>
+
+          <button type="submit" class="btn primary">
+            Lưu booking & mở Phiếu xác nhận
+          </button>
+        </form>
+      </section>
+
+      <!-- 2. XEM LỊCH CÒN/HẾT -->
+      <section class="card">
+        <h2>2. Xem lịch CÒN / HẾT theo ngày (1 phòng)</h2>
+        <form id="viewForm">
+          <div class="row">
+            <div class="col-2">
+              <label for="viewRoom">Phòng</label>
+              <select id="viewRoom"></select>
+            </div>
+            <div class="col-2">
+              <label for="viewDate">Ngày</label>
+              <input type="date" id="viewDate" />
+            </div>
+          </div>
+          <button type="submit" class="btn secondary">Xem lịch</button>
+        </form>
+
+        <div id="availabilityTable"></div>
+      </section>
+
+      <!-- 3. TÌM PHÒNG TRỐNG -->
+      <section class="card">
+        <h2>3. Tìm phòng trống theo khung giờ (kèm link Drive)</h2>
+        <form id="searchForm">
+          <div class="row">
+            <div class="col-2">
+              <label for="searchCheckIn">Giờ check-in</label>
+              <input type="datetime-local" id="searchCheckIn" />
+            </div>
+            <div class="col-2">
+              <label for="searchCheckOut">Giờ check-out</label>
+              <input type="datetime-local" id="searchCheckOut" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-2">
+              <label for="searchCombo">Combo (để tính giá gợi ý)</label>
+              <select id="searchCombo"></select>
+            </div>
+          </div>
+          <button type="submit" class="btn secondary">
+            Tìm phòng trống
+          </button>
+        </form>
+
+        <div id="searchResults"></div>
+      </section>
+
+      <!-- 4. DANH SÁCH BOOKING (trong phiên) -->
+      <section class="card">
+        <h2>4. Booking đã lưu (trong phiên hiện tại)</h2>
+        <p class="small-text">
+          Dùng để kiểm tra nhanh nhân viên nhập đúng chưa. Dữ liệu chính thức vẫn
+          lưu ở Google Sheet khi bạn <b>Tạo nội dung xác nhận</b>.
+        </p>
+        <div id="bookingList" class="small-text"></div>
+      </section>
+
+      <!-- 5. PHIẾU XÁC NHẬN -->
+      <section class="card full-width" id="confirmCard" style="display:none;">
+        <h2>5. Phiếu xác nhận đặt Dreamss Home</h2>
+        <p class="small-text">
+          Điền thông tin khách, phụ phí, giảm giá. Hệ thống tính tổng, cập nhật
+          hạng khách thân thiết & gửi dữ liệu lên Google Sheet.
+        </p>
+
+        <form id="confirmForm">
+          <div class="row">
+            <div class="col-2">
+              <label>Phòng + Chi nhánh</label>
+              <input type="text" id="cfRoomInfo" readonly />
+            </div>
+            <div class="col-2">
+              <label>Combo</label>
+              <input type="text" id="cfComboInfo" readonly />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Check-in</label>
+              <input type="text" id="cfCheckIn" readonly />
+            </div>
+            <div class="col-2">
+              <label>Check-out</label>
+              <input type="text" id="cfCheckOut" readonly />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Giá home gốc (combo + giờ thêm)</label>
+              <input type="text" id="cfBasePrice" readonly />
+            </div>
+            <div class="col-2">
+              <label>Thời lượng (giờ)</label>
+              <input type="text" id="cfDuration" readonly />
+            </div>
+          </div>
+
+          <hr />
+
+          <div class="row">
+            <div class="col-2">
+              <label>Khách hàng (Anh/Chị)</label>
+              <input type="text" id="cfCustomerName" placeholder="Tên khách" />
+            </div>
+            <div class="col-2">
+              <label>Số điện thoại</label>
+              <input type="tel" id="cfCustomerPhone" placeholder="Số điện thoại" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Số lượng khách (tối đa 2, thêm khách +100K)</label>
+              <input type="number" id="cfGuestCount" min="1" value="2" />
+            </div>
+            <div class="col-2">
+              <label>Giảm giá % (nếu có)</label>
+              <input type="number" id="cfDiscountPercent" min="0" max="100" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Giảm giá cố định (VNĐ)</label>
+              <input type="number" id="cfDiscountAmount" min="0" />
+            </div>
+            <div class="col-2">
+              <label>Phí trang trí (VNĐ)</label>
+              <input type="number" id="cfDecorFee" min="0" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Phí khác (VNĐ)</label>
+              <input type="number" id="cfOtherFee" min="0" />
+            </div>
+            <div class="col-2">
+              <label>Đã thanh toán (VNĐ)</label>
+              <input type="number" id="cfPaidAmount" min="0" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-2">
+              <label>Trạng thái thanh toán</label>
+              <select id="cfPaidStatus">
+                <option value="chua">Chưa thanh toán đủ</option>
+                <option value="du">Đã thanh toán đủ</option>
+              </select>
+            </div>
+            <div class="col-2">
+              <label>Ghi chú khác</label>
+              <input type="text" id="cfNote" placeholder="VD: Trang trí sinh nhật..." />
+            </div>
+          </div>
+
+          <div id="cfPriceSummary" class="price-preview">
+            Tổng tiền sau giảm sẽ hiển thị tại đây.
+          </div>
+
+          <button type="submit" class="btn primary">
+            Tạo nội dung xác nhận & lưu Google Sheet
+          </button>
+        </form>
+
+        <h3>Nội dung gửi khách</h3>
+        <textarea id="cfTextOutput" rows="10" class="confirm-text"></textarea>
+
+        <button type="button" id="btnCopyConfirm" class="btn secondary">
+          📋 Copy nội dung gửi khách
+        </button>
+
+        <div id="tierInfo" class="loyalty-info"></div>
+      </section>
+
+      <!-- 6. LỊCH DỌN PHÒNG -->
+      <section class="card full-width">
+        <h2>6. Lịch dọn phòng (Housekeeping)</h2>
+        <form id="cleaningForm">
+          <div class="row">
+            <div class="col-2">
+              <label for="cleaningDate">Ngày</label>
+              <input type="date" id="cleaningDate" />
+            </div>
+          </div>
+          <button type="submit" class="btn secondary">Xem lịch dọn</button>
+        </form>
+
+        <p class="small-text">
+          Hiển thị giờ check-out và block dọn 30 phút cho từng phòng trong ngày.
+        </p>
+
+        <div id="cleaningTable"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      © 2025 Dreamss Homestay – Internal tool (beta V2)
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
